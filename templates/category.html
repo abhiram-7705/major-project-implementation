@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{ type.capitalize() }} Performing Students</h1>
+<div class="card p-4">
+    <table class="table">
+    <tr>
+        <th>Review</th>
+        <th>Cognition Score</th>
+    </tr>
+
+    {% for d in data %}
+    <tr>
+        <td>{{ d.review }}</td>
+        <td>{{ d.score }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+
+{% endblock %}

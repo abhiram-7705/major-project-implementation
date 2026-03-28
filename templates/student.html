@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Feedback System</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe, #f8fafc);
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: #1e3a8a;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* MAIN CONTAINER */
+        .wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 70px);
+        }
+
+        .card {
+            background: white;
+            padding: 35px;
+            border-radius: 16px;
+            width: 420px;
+            box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: none;
+        }
+
+        button {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .error {
+            color: #dc2626;
+            font-size: 13px;
+        }
+
+        .success {
+            color: #16a34a;
+            font-size: 13px;
+        }
+
+        #result {
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    Student Feedback System
+</div>
+
+<div class="wrapper">
+    <div class="card">
+
+        <h2>Submit Feedback</h2>
+
+        <input type="text" id="student_id" placeholder="Enter Student ID">
+        <div id="id_message"></div>
+
+        <input type="text" id="student_name" placeholder="Student Name" readonly>
+
+        <textarea id="review" placeholder="Enter your review"></textarea>
+
+        <button onclick="submitReview()">Submit Feedback</button>
+
+        <div id="result"></div>
+
+    </div>
+</div>
+
+<script>
+let validStudent = false;
+
+document.getElementById("student_id").addEventListener("keyup", function() {
+    let studentId = this.value;
+
+    if (studentId.length === 0) return;
+
+    fetch(`/validate_student/${studentId}`)
+        .then(res => res.json())
+        .then(data => {
+            let msg = document.getElementById("id_message");
+
+            if (data.valid) {
+                validStudent = true;
+                msg.innerHTML = "<span class='success'>✔ Valid Student</span>";
+                document.getElementById("student_name").value = data.name;
+            } else {
+                validStudent = false;
+                msg.innerHTML = `<span class='error'>${data.message}</span>`;
+                document.getElementById("student_name").value = "";
+            }
+        });
+});
+
+function submitReview() {
+    if (!validStudent) {
+        alert("Invalid Student ID");
+        return;
+    }
+
+    let student_id = document.getElementById("student_id").value;
+    let review = document.getElementById("review").value;
+
+    fetch("/submit_review", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `student_id=${student_id}&review=${review}`
+    })
+    .then(res => res.text())
+    .then(data => {
+        document.getElementById("result").innerHTML = data;
+    });
+}
+</script>
+
+</body>
+</html>

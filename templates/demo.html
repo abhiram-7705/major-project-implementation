@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cognition Comparison Demo</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .forms {
+            display: flex;
+            gap: 20px;
+        }
+
+        .form-box {
+            flex: 1;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        input {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .common {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .comparison {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            flex: 1;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .low {
+            background: #dc3545;
+        }
+
+        .high {
+            background: #28a745;
+        }
+
+        .aspect-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            color: black;
+            border-radius: 6px;
+        }
+
+        .highlight {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .explanation {
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Cognition-Based Sentiment Comparison</h1>
+
+    <!-- REVIEW -->
+    <label><b>Review (Common for both students)</b></label>
+    <textarea id="review" placeholder="Enter feedback..."></textarea>
+
+    <!-- FORMS -->
+    <div class="forms">
+
+        <div class="form-box">
+            <h3>Student A (Low Performance)</h3>
+            <input type="number" id="cgpa_1" placeholder="CGPA (10)">
+            <input type="number" id="a1_1" placeholder="Assignment 1 (30)">
+            <input type="number" id="a2_1" placeholder="Assignment 2 (30)">
+            <input type="number" id="quiz_1" placeholder="Quiz (10)">
+            <input type="number" id="extra_1" placeholder="Extra (10)">
+            <input type="number" id="att_1" placeholder="Attendance (100)">
+        </div>
+
+        <div class="form-box">
+            <h3>Student B (High Performance)</h3>
+            <input type="number" id="cgpa_2" placeholder="CGPA (10)">
+            <input type="number" id="a1_2" placeholder="Assignment 1 (30)">
+            <input type="number" id="a2_2" placeholder="Assignment 2 (30)">
+            <input type="number" id="quiz_2" placeholder="Quiz (10)">
+            <input type="number" id="extra_2" placeholder="Extra (10)">
+            <input type="number" id="att_2" placeholder="Attendance (100)">
+        </div>
+
+    </div>
+
+    <br>
+    <button onclick="analyze()">Analyze</button>
+
+    <!-- RESULTS -->
+    <div class="results">
+
+        <!-- COMMON -->
+        <div class="common">
+            <h2>Common Sentiment</h2>
+            <p><b>Overall Sentiment:</b> <span id="overall"></span></p>
+
+            <h3>Aspect Sentiment</h3>
+            <div id="aspects"></div>
+        </div>
+
+        <!-- COMPARISON -->
+        <div class="comparison">
+            <div id="studentA" class="card low"></div>
+            <div id="studentB" class="card high"></div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function scale(val, max) {
+    return (val / max) * 100;
+}
+
+function analyze() {
+
+    const review = document.getElementById("review").value;
+
+    const student1 = {
+        assignment1: scale(document.getElementById("a1_1").value, 30),
+        assignment2: scale(document.getElementById("a2_1").value, 30),
+        quiz: scale(document.getElementById("quiz_1").value, 10),
+        extra: scale(document.getElementById("extra_1").value, 10),
+        attendance: document.getElementById("att_1").value,
+        cgpa: document.getElementById("cgpa_1").value
+        
+    };
+
+    const student2 = {
+        assignment1: scale(document.getElementById("a1_2").value, 30),
+        assignment2: scale(document.getElementById("a2_2").value, 30),
+        quiz: scale(document.getElementById("quiz_2").value, 10),
+        extra: scale(document.getElementById("extra_2").value, 10),
+        attendance: document.getElementById("att_2").value,
+        cgpa: document.getElementById("cgpa_2").value
+    };
+
+    Promise.all([
+        fetch("/analyze", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({review, ...student1})
+        }).then(res => res.json()),
+
+        fetch("/analyze", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({review, ...student2})
+        }).then(res => res.json())
+    ])
+    .then(([res1, res2]) => {
+
+        // COMMON
+        document.getElementById("overall").innerText = res1.overall_sentiment;
+
+        let aspectHTML = "";
+        for (let a in res1.aspect_analysis) {
+            aspectHTML += `
+                <div class="aspect-box">
+                    <b>${a}</b><br>
+                    Sentiment: ${res1.aspect_analysis[a].sentiment}
+                </div>
+            `;
+        }
+        document.getElementById("aspects").innerHTML = aspectHTML;
+
+        const key = Object.keys(res1.aspect_analysis)[0];
+
+        // STUDENT A
+        document.getElementById("studentA").innerHTML = `
+            <h3>Student A (Lower Cognition)</h3>
+            <p><b>Cognition:</b> ${res1.cognition_score}%</p>
+
+            <div class="highlight">${res1.aspect_analysis[key].cognition_level}</div>
+            <div class="explanation">${res1.aspect_analysis[key].explanation}</div>
+        `;
+
+        // STUDENT B
+        document.getElementById("studentB").innerHTML = `
+            <h3>Student B (Higher Cognition)</h3>
+            <p><b>Cognition:</b> ${res2.cognition_score}%</p>
+
+            <div class="highlight">${res2.aspect_analysis[key].cognition_level}</div>
+            <div class="explanation">${res2.aspect_analysis[key].explanation}</div>
+        `;
+
+    });
+}
+
+</script>
+
+</body>
+</html>
+
+{% endblock %}

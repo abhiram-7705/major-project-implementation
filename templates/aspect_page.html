@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">{{ aspect }} Analysis</h2>
+
+{% for key, reviews in grouped.items() %}
+<div class="card p-3 mb-3">
+    <h4>{{ key }}</h4>
+    <ul>
+        {% for r in reviews %}
+        <li>{{ r }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+
+{% endblock %}

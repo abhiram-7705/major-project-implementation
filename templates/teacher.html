@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Teacher Data Upload</h1>
+
+<form action="/upload_excel" method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx" required>
+    <button type="submit">Upload Excel</button>
+</form>
+
+<br><br>
+
+<h2>Student Performance Table</h2>
+
+<style>
+.empty-cell {
+    background-color: #ffcccc; /* light red */
+}
+td {
+    min-width: 80px;
+}
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+button {
+    background: #1e293b;
+    color: white;
+    border-radius: 6px;
+}
+</style>
+
+<table border="1" cellpadding="8" style="width:100%; text-align:center;">
+    <tr>
+        <th>Student ID</th>
+        <th>CGPA</th>
+        <th>A1</th>
+        <th>A2</th>
+        <th>Quiz</th>
+        <th>Extra</th>
+        <th>Attendance</th>
+        <th>Action</th>
+    </tr>
+
+    {% for row in data %}
+    <tr>
+        <td>{{ row.student_id }}</td>
+
+        <td contenteditable="true"
+            class="{% if row.cgpa is none or row.cgpa == '' %}empty-cell{% endif %}">
+            {{ row.cgpa if row.cgpa is not none else '' }}
+        </td>
+
+        <td contenteditable="true"
+            class="{% if row.assignment1 is none or row.assignment1 == '' %}empty-cell{% endif %}">
+            {{ row.assignment1 if row.assignment1 is not none else '' }}
+        </td>
+
+        <td contenteditable="true"
+            class="{% if row.assignment2 is none or row.assignment2 == '' %}empty-cell{% endif %}">
+            {{ row.assignment2 if row.assignment2 is not none else '' }}
+        </td>
+
+        <td contenteditable="true"
+            class="{% if row.quiz is none or row.quiz == '' %}empty-cell{% endif %}">
+            {{ row.quiz if row.quiz is not none else '' }}
+        </td>
+
+        <td contenteditable="true"
+            class="{% if row.extra is none or row.extra == '' %}empty-cell{% endif %}">
+            {{ row.extra if row.extra is not none else '' }}
+        </td>
+
+        <td contenteditable="true"
+            class="{% if row.attendance is none or row.attendance == '' %}empty-cell{% endif %}">
+            {{ row.attendance if row.attendance is not none else '' }}
+        </td>
+
+        <td><button onclick="saveRow(this)">Save</button></td>
+    </tr>
+    {% endfor %}
+</table>
+
+<script>
+function saveRow(btn) {
+    let row = btn.parentElement.parentElement;
+    let cells = row.children;
+
+    let data = {
+        student_id: cells[0].innerText.trim(),
+        cgpa: parseFloat(cells[1].innerText) || 0,
+        assignment1: parseFloat(cells[2].innerText) || 0,
+        assignment2: parseFloat(cells[3].innerText) || 0,
+        quiz: parseFloat(cells[4].innerText) || 0,
+        extra: parseFloat(cells[5].innerText) || 0,
+        attendance: parseFloat(cells[6].innerText) || 0
+    };
+
+    fetch("/save_performance", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        alert("Saved successfully!");
+
+        // 🔥 remove red highlight after saving
+        for (let i = 1; i <= 6; i++) {
+            if (cells[i].innerText.trim() !== "") {
+                cells[i].classList.remove("empty-cell");
+            }
+        }
+    });
+}
+</script>
+
+{% endblock %}

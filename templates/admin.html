@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<h1>Course Dashboard</h1>
+
+<!-- 🔥 GLOBAL INSIGHT -->
+<div class="alert alert-info">
+    Overall, this course has received predominantly <b>{{ dominant_sentiment }}</b> feedback.
+</div>
+
+<!-- STUDENT STATUS -->
+<div class="row text-center mb-4">
+    <div class="col">
+        <div class="card bg-success text-white p-3 clickable" onclick="openStatus('submitted')">
+            Submitted<br>{{ submitted }}
+        </div>
+    </div>
+    <div class="col">
+        <div class="card bg-warning p-3 clickable" onclick="openStatus('pending')">
+            Pending<br>{{ pending }}
+        </div>
+    </div>
+    <div class="col">
+        <div class="card bg-danger text-white p-3 clickable" onclick="openStatus('waiting')">
+            Waiting<br>{{ waiting }}
+        </div>
+    </div>
+</div>
+
+<!-- SENTIMENT -->
+<h3>Overall Sentiment</h3>
+<div class="row text-center mb-4">
+    <div class="col">
+        <div class="card bg-success text-white p-3 clickable"
+             onclick="window.location='/sentiment/Positive'">
+            Positive<br>{{ sentiments.Positive }}
+        </div>
+    </div>
+    <div class="col">
+        <div class="card bg-warning p-3 clickable"
+             onclick="window.location='/sentiment/Neutral'">
+            Neutral<br>{{ sentiments.Neutral }}
+        </div>
+    </div>
+    <div class="col">
+        <div class="card bg-danger text-white p-3 clickable"
+             onclick="window.location='/sentiment/Negative'">
+            Negative<br>{{ sentiments.Negative }}
+        </div>
+    </div>
+</div>
+
+<!-- PERFORMANCE -->
+<h3>Performance Categories</h3>
+<div class="row text-center mb-4">
+    <div class="col">
+        <div class="card bg-success text-white p-3 clickable"
+             onclick="openPerformance('high')">
+            High Performing<br>{{ high }}
+        </div>
+    </div>
+    <div class="col">
+        <div class="card bg-warning p-3 clickable"
+             onclick="openPerformance('medium')">
+            Average Performing<br>{{ medium }}
+        </div>
+    </div>
+    <div class="col">
+        <div class="card bg-danger text-white p-3 clickable"
+             onclick="openPerformance('low')">
+            Low Performing<br>{{ low }}
+        </div>
+    </div>
+</div>
+
+<!-- ASPECT ANALYSIS -->
+<h3>Aspect Analysis</h3>
+<div class="row">
+{% for asp, counts in aspects.items() %}
+    <div class="col-md-3 mb-3">
+        <div class="card p-2 clickable"
+             data-aspect="{{ asp|replace('#','_') }}"
+             onclick="goToAspect(this)">
+             
+            <b>{{ asp.replace('#3','').replace('#General','') }}</b><br>
+            <small>
+                Positive: {{ counts.Positive }}<br>
+                Neutral: {{ counts.Neutral }}<br>
+                Negative: {{ counts.Negative }}
+            </small>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<!-- PDF BUTTONS -->
+<div class="mt-4">
+    <a href="/download_summary" class="btn btn-primary">Download Summary PDF</a>
+    <a href="/download_detailed" class="btn btn-dark">Download Detailed Report</a>
+</div>
+
+<!-- STATUS MODAL -->
+<div class="modal fade" id="statusModal">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <h4 id="statusTitle"></h4>
+      <ul id="statusList"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- PERFORMANCE MODAL -->
+<div class="modal fade" id="perfModal">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <h4>Performance Insight</h4>
+      <div id="perfContent"></div>
+    </div>
+  </div>
+</div>
+<h3 class="mt-5">Analyzed Student Reviews</h3>
+
+<table class="table table-bordered mt-3">
+    <thead>
+        <tr>
+            <th>Review</th>
+            <th>Sentiment</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for r in results %}
+        <tr>
+            <td>{{ r.review }}</td>
+            <td>{{ r.overall }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* Cards spacing */
+.row .card {
+    font-size: 18px;
+    font-weight: 500;
+    border-radius: 16px;
+}
+
+/* Aspect cards */
+[data-aspect] {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+/* Table */
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+</style>
+<script>
+function openStatus(type){
+    fetch('/get_students_by_status/' + type)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("statusTitle").innerText = type.toUpperCase();
+
+        let list = "";
+        data.students.forEach(s => {
+            list += "<li>" + s + "</li>";
+        });
+
+        document.getElementById("statusList").innerHTML = list;
+
+        new bootstrap.Modal(document.getElementById('statusModal')).show();
+    });
+}
+
+function openPerformance(level){
+    console.log("Clicked:", level);
+    fetch('/performance_insight/' + level)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("perfContent").innerHTML = `
+            <p><b>Majority Sentiment:</b> ${data.majority}</p>
+            <p><b>Average Cognition:</b> ${data.avg_cognition}</p>
+            <p><b>Insight:</b> ${data.interpretation}</p>
+        `;
+
+        new bootstrap.Modal(document.getElementById('perfModal')).show();
+    });
+}
+
+function goToAspect(el){
+    let asp = el.getAttribute("data-aspect");
+    window.location = "/aspect/" + asp;
+}
+</script>
+
+<style>
+.clickable {
+    cursor: pointer;
+    transition: 0.2s;
+}
+.clickable:hover {
+    transform: scale(1.05);
+}
+</style>
+
+{% endblock %}
